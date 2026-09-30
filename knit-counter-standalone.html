@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="화면을 탭하면 단수가 올라가는 뜨개 카운터. 차트 사진, 반복 패턴, 늘림·줄임 규칙, 코수 계산, 프로젝트별 메모.">
+<meta name="theme-color" content="#E7EAE4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141814" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232F6C5B'/%3E%3Cpath d='M4 22 L10 13 L16 22 M16 22 L22 13 L28 22 M1 13 L7 4 L13 13 M13 13 L19 4 L25 13' fill='none' stroke='%23F5F7F2' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>뜨개 단수 카운터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  html,body{margin:0;padding:0}
+  html{height:100%}
+</style>
+<style>
+  :root{
+    --bg:#E7EAE4;
+    --surface:#F5F7F2;
+    --surface-2:#DBE0D6;
+    --ink:#1B211C;
+    --muted:#66705F;
+    --line:rgba(27,33,28,.13);
+    --line-strong:rgba(27,33,28,.28);
+    --accent:#2F6C5B;
+    --accent-soft:rgba(47,108,91,.14);
+    --accent-ink:#F5F7F2;
+    --danger:#9E3B31;
+    --danger-soft:rgba(158,59,49,.13);
+    --hl:rgba(255,205,55,.36);
+    --hl-line:#C4890B;
+    --shadow:0 1px 2px rgba(27,33,28,.06), 0 8px 24px rgba(27,33,28,.07);
+    --knit:rgba(27,33,28,.085);
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141814;
+      --surface:#1D231E;
+      --surface-2:#28302A;
+      --ink:#E7EDE5;
+      --muted:#91A093;
+      --line:rgba(231,237,229,.13);
+      --line-strong:rgba(231,237,229,.3);
+      --accent:#78C4A9;
+      --accent-soft:rgba(120,196,169,.16);
+      --accent-ink:#0E1512;
+      --danger:#E0897C;
+      --danger-soft:rgba(224,137,124,.16);
+      --hl:rgba(255,210,70,.34);
+      --hl-line:#E0A93A;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.34);
+      --knit:rgba(231,237,229,.09);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141814;
+    --surface:#1D231E;
+    --surface-2:#28302A;
+    --ink:#E7EDE5;
+    --muted:#91A093;
+    --line:rgba(231,237,229,.13);
+    --line-strong:rgba(231,237,229,.3);
+    --accent:#78C4A9;
+    --accent-soft:rgba(120,196,169,.16);
+    --accent-ink:#0E1512;
+    --danger:#E0897C;
+    --danger-soft:rgba(224,137,124,.16);
+    --hl:rgba(255,210,70,.34);
+    --hl-line:#E0A93A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.34);
+    --knit:rgba(231,237,229,.09);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+  button,input,textarea,select{font:inherit;color:inherit}
+  :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:6px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+  .app{
+    display:flex;flex-direction:column;gap:11px;
+    height:100dvh;max-width:560px;margin:0 auto;
+    padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- top ---------- */
+  .top{display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+  .brand{display:flex;align-items:center;gap:8px;padding:0 2px}
+  .brand svg{display:block;color:var(--accent)}
+  .brand h1{margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .sync{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:.68rem;color:var(--muted)}
+  .sync i{width:6px;height:6px;border-radius:50%;background:var(--line-strong);display:block}
+  .sync.live i{background:var(--accent)}
+
+  .projects{display:flex;gap:7px;overflow-x:auto;padding:2px;scrollbar-width:none}
+  .projects::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);border-radius:999px;padding:7px 14px;
+    font-size:.82rem;font-weight:500;cursor:pointer;white-space:nowrap;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .chip:hover{border-color:var(--line-strong)}
+  .chip[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+  .chip.add{width:36px;padding:7px 0;text-align:center;font-size:1rem;line-height:1}
+
+  .main{display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0}
+
+  /* ---------- chart ---------- */
+  .chart-card{
+    flex:1 1 auto;min-height:110px;display:flex;flex-direction:column;
+    border:1px solid var(--line);border-radius:20px;background:var(--surface);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .chart-card.collapsed{flex:0 0 auto}
+  .chart-head{
+    display:flex;align-items:center;gap:8px;padding:9px 10px 9px 14px;
+    border-bottom:1px solid var(--line);flex:0 0 auto;
+  }
+  .chart-card.collapsed .chart-head{border-bottom:none}
+  .chart-title{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .chart-pos{font-size:.82rem;font-weight:600;margin-right:auto}
+  .chart-pos b{color:var(--accent)}
+  .icon-btn{
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    border-radius:9px;padding:5px 9px;font-size:.74rem;font-weight:500;cursor:pointer;
+  }
+  .icon-btn:hover{border-color:var(--line-strong);color:var(--ink)}
+  .icon-btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .chart-view{flex:1 1 auto;min-height:0;overflow:auto;background:var(--surface-2);padding:0}
+  .chart-card.collapsed .chart-view,.chart-card.collapsed .chart-tools{display:none}
+  .chart-wrap{position:relative;width:100%;line-height:0}
+  .chart-wrap img{display:block;width:100%;height:auto}
+  .band{
+    position:absolute;left:0;right:0;pointer-events:none;
+    background:var(--hl);
+    border-top:2px solid var(--hl-line);border-bottom:2px solid var(--hl-line);
+    transition:top .18s ease-out,height .18s ease-out;
+  }
+  .guide{
+    position:absolute;left:0;right:0;height:30px;margin-top:-15px;display:none;z-index:3;
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .chart-card.adjust .guide{display:block}
+  .guide:active{cursor:grabbing}
+  .guide::before{content:"";position:absolute;left:0;right:0;top:13.5px;height:3px;background:var(--accent);opacity:.95}
+  .guide::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:var(--accent);opacity:.07;border-radius:4px}
+  .guide span{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    background:var(--accent);color:var(--accent-ink);font-size:.66rem;font-weight:600;
+    padding:4px 10px;border-radius:999px;pointer-events:none;white-space:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .guide:focus-visible{outline:2.5px solid var(--accent);outline-offset:0}
+  .chart-tools{
+    display:none;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:10px 12px;border-top:1px solid var(--line);background:var(--surface);flex:0 0 auto;
+  }
+  .chart-card.adjust .chart-tools{display:flex}
+  .app.adjusting .pad{display:none}
+  .app.adjusting .chart-card{flex:1 1 auto}
+  .chart-card.adjust .chart-view{overflow:hidden;display:flex;align-items:center;justify-content:center;padding:14px 0}
+  .chart-card.adjust .chart-wrap{width:auto;max-width:100%;max-height:100%}
+  .chart-card.adjust .chart-wrap img{width:auto;height:auto;max-width:100%;max-height:100%}
+  .chart-tools .tip{font-size:.7rem;color:var(--muted);flex:1 1 100%;line-height:1.45}
+  .chart-tools label{font-size:.74rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .chart-tools input[type="number"]{
+    width:64px;background:var(--bg);border:1px solid var(--line);border-radius:9px;
+    padding:6px 8px;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:.85rem;
+  }
+  .chart-empty{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    padding:22px;text-align:center;color:var(--muted);font-size:.8rem;line-height:1.6;
+  }
+
+  /* ---------- pad ---------- */
+  .pad{
+    flex:1 1 56%;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    width:100%;min-height:0;
+    border:1px solid var(--line);border-radius:24px;
+    background:var(--surface);box-shadow:var(--shadow);
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;user-select:none;-webkit-user-select:none;
+    padding:18px;
+    transition:transform .09s ease-out,border-color .18s,background .18s;
+  }
+  .pad::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,var(--knit) 0 58%,transparent 97%);
+    -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='26' viewBox='0 0 34 26'%3E%3Cpath d='M1 1 L9 12.5 L17 1 M17 1 L25 12.5 L33 1 M1 14 L9 25.5 L17 14 M17 14 L25 25.5 L33 14' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='26' viewBox='0 0 34 26'%3E%3Cpath d='M1 1 L9 12.5 L17 1 M17 1 L25 12.5 L33 1 M1 14 L9 25.5 L17 14 M17 14 L25 25.5 L33 14' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    -webkit-mask-size:34px 26px;mask-size:34px 26px;-webkit-mask-repeat:repeat;mask-repeat:repeat;
+  }
+  .pad:active{transform:scale(.994)}
+  .pad.bump{animation:bump .18s ease-out}
+  @keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.012)}100%{transform:scale(1)}}
+  .pad.shape-inc{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-soft),transparent 42%),var(--surface)}
+  .pad.shape-dec{border-color:var(--danger);background:linear-gradient(180deg,var(--danger-soft),transparent 42%),var(--surface)}
+
+  .pad-label{position:relative;font-size:.7rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .pad-count{
+    position:relative;font-weight:600;font-variant-numeric:tabular-nums;
+    font-size:clamp(4.5rem,26vw,10rem);line-height:.94;letter-spacing:-.04em;
+  }
+  .app.has-chart .pad-count{font-size:clamp(2.8rem,15vw,5.2rem)}
+  .app.has-chart .pad{flex:0 0 auto;min-height:34%;padding:14px}
+  .pad-count.flash{animation:flash .3s ease-out}
+  @keyframes flash{0%{color:var(--accent)}100%{color:var(--ink)}}
+  .sts{position:relative;font-size:.86rem;color:var(--muted);margin-top:4px}
+  .sts b{color:var(--ink);font-weight:600}
+  .pad-hint{position:relative;font-size:.76rem;color:var(--muted);margin-top:8px}
+  .app.has-chart .pad-hint{display:none}
+
+  .repeat{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
+  .app.has-chart .repeat{margin-top:10px}
+  .dots{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:280px}
+  .dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line-strong);transition:background .15s,transform .15s,border-color .15s}
+  .dot.done{background:var(--accent-soft);border-color:var(--accent-soft)}
+  .dot.now{background:var(--accent);border-color:var(--accent);transform:scale(1.45)}
+  .repeat-text{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .repeat-text b{color:var(--ink);font-weight:600}
+
+  .shape-now{
+    position:relative;margin-top:12px;display:flex;align-items:center;gap:8px;
+    padding:9px 16px;border-radius:999px;font-size:.86rem;font-weight:600;
+    background:var(--accent);color:var(--accent-ink);
+    max-width:100%;text-align:center;
+  }
+  .shape-now.dec{background:var(--danger)}
+  .shape-now small{font-weight:500;opacity:.85;font-size:.78rem;margin-left:2px;padding-left:9px;border-left:1px solid currentColor}
+  .shape-next{position:relative;margin-top:10px;font-size:.76rem;color:var(--muted);text-align:center;line-height:1.5}
+  .shape-next b{color:var(--ink);font-weight:600}
+
+  /* ---------- bottom bar ---------- */
+  .bar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;flex:0 0 auto}
+  .bar button{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    padding:10px 4px 9px;border-radius:14px;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    font-size:.72rem;font-weight:500;cursor:pointer;
+    transition:background .14s,border-color .14s,opacity .14s;
+  }
+  .bar button svg{display:block;color:var(--muted)}
+  .bar button:hover:not(:disabled){border-color:var(--line-strong)}
+  .bar button:active:not(:disabled){background:var(--surface-2)}
+  .bar button:disabled{opacity:.34;cursor:default}
+
+  /* ---------- sheets ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(12,16,13,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:50%;bottom:0;transform:translate(-50%,102%);
+    width:min(560px,100%);z-index:11;background:var(--surface);color:var(--ink);
+    border:1px solid var(--line);border-bottom:none;border-radius:24px 24px 0 0;
+    padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 40px rgba(12,16,13,.22);
+    transition:transform .26s cubic-bezier(.22,.9,.3,1);
+    max-height:90dvh;overflow-y:auto;
+  }
+  .sheet.open{transform:translate(-50%,0)}
+  .grab{width:38px;height:4px;border-radius:99px;background:var(--line-strong);margin:0 auto 14px;opacity:.5}
+  .sheet h2{margin:0 0 14px;font-size:1rem;font-weight:600;letter-spacing:-.01em}
+  .sec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+  .sec h3{margin:0 0 10px;font-size:.73rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:13px}
+  .field label{font-size:.74rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .field .help{font-size:.73rem;color:var(--muted);line-height:1.55}
+  .field input,.field textarea,.field select{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;
+    padding:11px 13px;font-size:.95rem;
+  }
+  .field input[type="number"]{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .field textarea{min-height:140px;resize:vertical;line-height:1.65}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .two .field{margin-bottom:0}
+
+  .rule{border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:9px;background:var(--bg)}
+  .rule-top{display:flex;gap:7px;align-items:center;margin-bottom:9px}
+  .rule-top select{
+    flex:0 0 auto;background:var(--surface);border:1px solid var(--line);
+    border-radius:9px;padding:7px 8px;font-size:.82rem;font-weight:600;
+  }
+  .rule-top input[type="text"]{
+    flex:1 1 auto;min-width:0;background:var(--surface);border:1px solid var(--line);
+    border-radius:9px;padding:7px 10px;font-size:.82rem;
+  }
+  .rule-del{
+    flex:0 0 auto;border:none;background:transparent;color:var(--danger);
+    font-size:1.15rem;line-height:1;cursor:pointer;padding:6px 8px;border-radius:8px;
+  }
+  .rule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .rule-grid label{display:flex;flex-direction:column;gap:4px;font-size:.66rem;color:var(--muted);letter-spacing:.02em}
+  .rule-grid input{
+    width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    padding:8px 6px;text-align:center;font-family:"IBM Plex Mono",monospace;
+    font-variant-numeric:tabular-nums;font-size:.9rem;
+  }
+  .rule-grid input:focus{outline:none;border-color:var(--accent)}
+  .rule-sum{margin-top:9px;font-size:.72rem;color:var(--muted);line-height:1.5;font-variant-numeric:tabular-nums}
+  .rule-sum b{color:var(--ink);font-weight:600}
+  .add-rule{
+    width:100%;padding:11px;border-radius:12px;border:1px dashed var(--line-strong);
+    background:transparent;color:var(--muted);font-size:.85rem;font-weight:500;cursor:pointer;
+  }
+  .add-rule:hover{color:var(--ink);border-color:var(--accent)}
+
+  .sheet-actions{display:flex;gap:8px;margin-top:18px;position:sticky;bottom:0;padding-top:10px;background:linear-gradient(180deg,transparent,var(--surface) 34%)}
+  .btn{
+    flex:1;padding:13px;border-radius:13px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--ink);font-weight:600;font-size:.9rem;cursor:pointer;
+  }
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .btn.ghost{background:transparent;color:var(--danger);border-color:transparent;flex:0 0 auto;padding:13px 14px}
+  .btn:active{opacity:.86}
+  .btn:disabled{opacity:.3;cursor:default}
+  .file-btn{display:block;text-align:center;cursor:pointer}
+  .file-btn input{display:none}
+
+  .toast{
+    position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:20;
+    background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;
+    font-size:.82rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+    max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+        <path d="M1 13 L5 7 L9 13 M9 13 L13 7 L17 13 M-1 7 L3 1 L7 7 M7 7 L11 1 L15 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>뜨개 단수 카운터</h1>
+      <span class="sync" id="sync"><i></i><span id="syncText">저장 준비 중</span></span>
+    </div>
+    <div class="projects" id="projectBar" aria-label="프로젝트"></div>
+  </header>
+
+  <div class="main">
+    <section class="chart-card" id="chartCard" hidden>
+      <div class="chart-head">
+        <span class="chart-title">차트</span>
+        <span class="chart-pos" id="chartPos"></span>
+        <button class="icon-btn" id="adjustBtn" type="button">맞추기</button>
+        <button class="icon-btn" id="foldBtn" type="button" aria-label="차트 접기">접기</button>
+      </div>
+      <div class="chart-view" id="chartView">
+        <div class="chart-wrap" id="chartWrap">
+          <img id="chartImg" alt="뜨개 차트">
+          <div class="band" id="band"></div>
+          <div class="guide" id="gA"><span id="gALabel">마지막 단</span></div>
+          <div class="guide" id="gB"><span id="gBLabel">1단</span></div>
+        </div>
+      </div>
+      <div class="chart-tools">
+        <p class="tip">초록 선 두 개를 격자의 <b>맨 윗줄 위</b>와 <b>맨 아랫줄 아래</b>에 맞추고, 차트의 총 단수를 넣어주세요.</p>
+        <label>총 단수 <input type="number" id="chartRows" min="1" max="400" inputmode="numeric"></label>
+        <label><input type="checkbox" id="chartLoop"> 계속 반복</label>
+        <button class="icon-btn" id="dirBtn" type="button">아래 → 위</button>
+        <button class="icon-btn on" id="doneAdjust" type="button">완료</button>
+      </div>
+    </section>
+
+    <div class="pad" id="pad" role="button" tabindex="0" aria-label="한 단 추가 — 아무 데나 탭하세요">
+      <span class="pad-label">단</span>
+      <span class="pad-count" id="rowCount">0</span>
+      <div class="sts" id="stsLine" hidden></div>
+      <div class="repeat" id="repeatBox" hidden>
+        <div class="dots" id="dots"></div>
+        <div class="repeat-text" id="repeatText"></div>
+      </div>
+      <div class="shape-now" id="shapeNow" hidden></div>
+      <div class="shape-next" id="shapeNext" hidden></div>
+      <div class="pad-hint" id="padHint">아무 데나 탭하면 한 단</div>
+    </div>
+  </div>
+
+  <nav class="bar">
+    <button id="undoBtn" type="button" disabled>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 14 4 9l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h9a6 6 0 0 1 0 12h-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      되돌리기
+    </button>
+    <button id="minusBtn" type="button">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      한 단 빼기
+    </button>
+    <button id="noteBtn" type="button">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16l-4-3-3 3-3-3-4 3V4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 9h6M9 13h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      메모
+    </button>
+    <button id="editBtn" type="button">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v2.4M12 18.6V21M21 12h-2.4M5.4 12H3M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7M18.4 18.4l-1.7-1.7M7.3 7.3 5.6 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      설정
+    </button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<section class="sheet" id="noteSheet" role="dialog" aria-modal="true" aria-labelledby="noteTitle" aria-hidden="true">
+  <div class="grab"></div>
+  <h2 id="noteTitle">메모</h2>
+  <div class="field">
+    <textarea id="noteText" placeholder="바늘 호수, 실 정보, 패턴 메모…"></textarea>
+  </div>
+  <div class="sheet-actions"><button class="btn primary" type="button" data-close>닫기</button></div>
+</section>
+
+<section class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-labelledby="editTitle" aria-hidden="true">
+  <div class="grab"></div>
+  <h2 id="editTitle">프로젝트 설정</h2>
+
+  <div class="field">
+    <label for="nameInput">이름</label>
+    <input id="nameInput" type="text" maxlength="24" placeholder="목도리">
+  </div>
+  <div class="two">
+    <div class="field">
+      <label for="rowsInput">현재 단수</label>
+      <input id="rowsInput" type="number" min="0" max="99999" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="stsInput">시작 코수</label>
+      <input id="stsInput" type="number" min="0" max="9999" inputmode="numeric" placeholder="0">
+    </div>
+  </div>
+  <div class="field" style="margin-top:13px" id="repeatField">
+    <label for="repeatInput">반복 패턴 (몇 단마다)</label>
+    <input id="repeatInput" type="number" min="0" max="200" inputmode="numeric">
+    <span class="help" id="repeatHelp">8을 넣으면 8단짜리 패턴의 몇 번째 단인지 점으로 보여줍니다. 0이면 끕니다.</span>
+  </div>
+
+  <div class="sec">
+    <h3>늘림 · 줄임</h3>
+    <div id="ruleList"></div>
+    <button class="add-rule" id="addRule" type="button">+ 규칙 추가</button>
+    <p class="help" style="margin:10px 2px 0;font-size:.73rem;color:var(--muted);line-height:1.55">
+      “4단마다 1코 늘림 20회”라면 단마다 4, 코 1, 회 20, 첫 단 4를 넣으세요. 해당 단이 되면 카운터에 늘림단이라고 표시됩니다.
+    </p>
+  </div>
+
+  <div class="sec">
+    <h3>차트 사진</h3>
+    <div id="chartMeta"></div>
+    <label class="btn file-btn" id="fileLabel">
+      <span id="fileLabelText">차트 사진 올리기</span>
+      <input type="file" id="fileInput" accept="image/*">
+    </label>
+    <p class="help" style="margin:10px 2px 0;font-size:.73rem;color:var(--muted);line-height:1.55">
+      올린 뒤 “맞추기”에서 격자 위·아래에 선을 맞추고 총 단수를 넣으면, 뜨는 단마다 형광펜이 한 칸씩 올라갑니다.
+    </p>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn ghost" id="deleteBtn" type="button">삭제</button>
+    <button class="btn primary" type="button" data-close>완료</button>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var LS_KEY = "knit-counter-v1";
+  var MAX_UNDO = 60;
+  var IMG_MAX_CHARS = 190000;
+
+  var state = { projects: [], activeId: null, updated: 0 };
+  var undoStack = [];
+  var db = null, docRef = null, saveTimer = null, lastLocalWrite = 0;
+  var imgCache = {};
+  var shownImgFor = null;
+  var adjusting = false;
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------- model ---------- */
+  function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function clampNum(v, lo, hi, dflt){
+    v = Math.floor(Number(v));
+    if (!isFinite(v)) v = dflt;
+    return Math.max(lo, Math.min(hi, v));
+  }
+  function active(){
+    for (var i=0;i<state.projects.length;i++) if (state.projects[i].id === state.activeId) return state.projects[i];
+    return state.projects[0] || null;
+  }
+  function newProject(name){
+    return { id: uid(), name: name || "새 프로젝트", rows: 0, repeat: 0, note: "",
+             startSts: 0, shaping: [], chart: null };
+  }
+  function newRule(){
+    return { id: uid(), kind: "inc", every: 4, sts: 1, times: 10, start: 4, label: "" };
+  }
+  function normChart(c){
+    if (!c) return null;
+    var top = Number(c.top), bot = Number(c.bottom);
+    if (!isFinite(top)) top = .04;
+    if (!isFinite(bot)) bot = .96;
+    top = Math.max(0, Math.min(.98, top));
+    bot = Math.max(top + .02, Math.min(1, bot));
+    return {
+      rows: clampNum(c.rows, 1, 400, 8),
+      top: top, bottom: bot,
+      dir: c.dir === "down" ? "down" : "up",
+      loop: c.loop !== false
+    };
+  }
+  function normalize(data){
+    if (!data || !Array.isArray(data.projects)) return null;
+    var projects = data.projects.filter(function(p){ return p && typeof p.id === "string"; })
+      .slice(0,60).map(function(p){
+        return {
+          id: String(p.id),
+          name: String(p.name || "이름 없음").slice(0,40),
+          rows: clampNum(p.rows, 0, 99999, 0),
+          repeat: clampNum(p.repeat, 0, 200, 0),
+          note: String(p.note || "").slice(0,4000),
+          startSts: clampNum(p.startSts, 0, 9999, 0),
+          shaping: (Array.isArray(p.shaping) ? p.shaping : []).slice(0,12).map(function(r){
+            return {
+              id: String(r && r.id || uid()),
+              kind: (r && r.kind === "dec") ? "dec" : "inc",
+              every: clampNum(r && r.every, 1, 999, 4),
+              sts: clampNum(r && r.sts, 1, 999, 1),
+              times: clampNum(r && r.times, 1, 999, 1),
+              start: clampNum(r && r.start, 1, 99999, 1),
+              label: String(r && r.label || "").slice(0,24)
+            };
+          }),
+          chart: normChart(p.chart)
+        };
+      });
+    if (!projects.length) return null;
+    var ids = projects.map(function(p){ return p.id; });
+    return {
+      projects: projects,
+      activeId: ids.indexOf(data.activeId) >= 0 ? data.activeId : ids[0],
+      updated: Number(data.updated) || 0
+    };
+  }
+
+  /* ---------- shaping math ---------- */
+  function ruleRows(r){ return { first: r.start, last: r.start + (r.times - 1) * r.every }; }
+  function isShapingRow(r, row){
+    if (row < r.start) return false;
+    var d = row - r.start;
+    return d % r.every === 0 && d / r.every < r.times;
+  }
+  function appliedTimes(r, row){
+    if (row < r.start) return 0;
+    return Math.min(r.times, Math.floor((row - r.start) / r.every) + 1);
+  }
+  function nextShapingRow(r, row){
+    if (row < r.start) return r.start;
+    var k = Math.floor((row - r.start) / r.every) + 1;
+    if (k >= r.times) return null;
+    return r.start + k * r.every;
+  }
+  function shapingRowList(r){
+    var out = [];
+    for (var k=0;k<r.times;k++) out.push(r.start + k * r.every);
+    return out;
+  }
+  function stitchesAt(p, row){
+    var n = p.startSts;
+    for (var i=0;i<p.shaping.length;i++){
+      var r = p.shaping[i];
+      n += (r.kind === "dec" ? -1 : 1) * r.sts * appliedTimes(r, row);
+    }
+    return n;
+  }
+  function kindName(k){ return k === "dec" ? "줄임" : "늘림"; }
+
+  /* ---------- persistence ---------- */
+  function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+  function loadLocal(){ try{ return normalize(JSON.parse(localStorage.getItem(LS_KEY) || "null")); }catch(e){ return null; } }
+
+  function commit(){
+    state.updated = Date.now();
+    lastLocalWrite = state.updated;
+    saveLocal();
+    render();
+    if (!docRef) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      docRef.set(clone(state)).catch(function(){});
+    }, 500);
+  }
+
+  function setSync(live, text){
+    $("sync").classList.toggle("live", !!live);
+    $("syncText").textContent = text;
+  }
+
+  function chartPath(id){ return "charts/" + id; }
+  function imgKey(id){ return "knit-chart-" + id; }
+
+  function getImg(id){
+    if (imgCache[id] !== undefined) return imgCache[id];
+    var v = null;
+    try { v = localStorage.getItem(imgKey(id)); } catch(e){}
+    imgCache[id] = v;
+    return v;
+  }
+  function setImg(id, dataUrl){
+    imgCache[id] = dataUrl;
+    try {
+      if (dataUrl) localStorage.setItem(imgKey(id), dataUrl);
+      else localStorage.removeItem(imgKey(id));
+    } catch(e){}
+    if (db){
+      var ref = db.doc(chartPath(id));
+      if (dataUrl) ref.set({ img: dataUrl, updated: Date.now() }).catch(function(){});
+      else ref.delete().catch(function(){});
+    }
+  }
+  function pullImg(id){
+    if (!db || imgCache[id]) return;
+    db.doc(chartPath(id)).get().then(function(snap){
+      if (!snap.exists) return;
+      var d = snap.data();
+      if (!d || typeof d.img !== "string") return;
+      imgCache[id] = d.img;
+      try { localStorage.setItem(imgKey(id), d.img); } catch(e){}
+      if (state.activeId === id){ shownImgFor = null; render(); }
+    }).catch(function(){});
+  }
+
+  function initDb(){
+    if (!window.claude || typeof window.claude.use !== "function"){
+      setSync(false, "이 브라우저에 저장됨"); return;
+    }
+    window.claude.use("db").then(function(d){
+      if (!d){ setSync(false, "이 브라우저에 저장됨"); return; }
+      db = d;
+      docRef = db.doc("state/main");
+      setSync(true, "동기화됨");
+      var p = active();
+      if (p && p.chart) pullImg(p.id);
+      docRef.onSnapshot(function(snap){
+        if (!snap.exists){ if (state.projects.length) commit(); return; }
+        if (snap.metadata && snap.metadata.hasPendingWrites) return;
+        var remote = normalize(snap.data());
+        if (!remote) return;
+        if (remote.updated <= state.updated) return;
+        if (Date.now() - lastLocalWrite < 1500) return;
+        state = remote;
+        undoStack = [];
+        shownImgFor = null;
+        saveLocal();
+        render();
+        var a = active();
+        if (a && a.chart) pullImg(a.id);
+      }, function(){ setSync(false, "이 브라우저에 저장됨"); });
+    }).catch(function(){ setSync(false, "이 브라우저에 저장됨"); });
+  }
+
+  /* ---------- actions ---------- */
+  function pushUndo(){
+    undoStack.push({ projects: clone(state.projects), activeId: state.activeId });
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+  }
+  function bump(delta){
+    var p = active();
+    if (!p) return;
+    if (delta < 0 && p.rows === 0) return;
+    pushUndo();
+    p.rows = clampNum(p.rows + delta, 0, 99999, 0);
+    commit();
+  }
+  function undo(){
+    if (!undoStack.length) return;
+    var prev = undoStack.pop();
+    state.projects = prev.projects;
+    state.activeId = prev.activeId;
+    commit();
+    toast("되돌렸어요");
+  }
+  var toastTimer = null;
+  function toast(msg){
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2000);
+  }
+
+  /* ---------- chart geometry ---------- */
+  function chartRowOf(p){
+    var c = p.chart;
+    if (!c) return 0;
+    if (p.rows === 0) return 0;
+    if (c.loop) return ((p.rows - 1) % c.rows) + 1;
+    return Math.min(p.rows, c.rows);
+  }
+  function bandRect(c, r){
+    var h = (c.bottom - c.top) / c.rows;
+    var topF = (c.dir === "up") ? (c.bottom - r * h) : (c.top + (r - 1) * h);
+    return { top: topF, height: h };
+  }
+
+  /* ---------- rendering ---------- */
+  var chipSig = null;
+  function renderChips(p){
+    var sig = state.projects.map(function(x){ return x.id + "" + x.name; }).join("") + "|" + p.id;
+    if (sig === chipSig) return;
+    chipSig = sig;
+    var bar = $("projectBar");
+    bar.textContent = "";
+    state.projects.forEach(function(proj){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = proj.name;
+      b.setAttribute("aria-current", proj.id === p.id ? "true" : "false");
+      b.addEventListener("click", function(){
+        if (proj.id === state.activeId){ openEdit(); return; }
+        pushUndo();
+        state.activeId = proj.id;
+        shownImgFor = null;
+        setAdjust(false);
+        commit();
+        if (proj.chart) pullImg(proj.id);
+      });
+      bar.appendChild(b);
+    });
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "chip add"; add.textContent = "+";
+    add.setAttribute("aria-label", "프로젝트 추가");
+    add.addEventListener("click", function(){
+      pushUndo();
+      var np = newProject("프로젝트 " + (state.projects.length + 1));
+      state.projects.push(np);
+      state.activeId = np.id;
+      shownImgFor = null;
+      setAdjust(false);
+      commit();
+      openEdit();
+      var n = $("nameInput"); n.focus(); n.select();
+    });
+    bar.appendChild(add);
+  }
+
+  function renderShaping(p){
+    var nowEl = $("shapeNow"), nextEl = $("shapeNext"), pad = $("pad");
+    pad.classList.remove("shape-inc", "shape-dec");
+    var hits = [];
+    var nexts = [];
+    for (var i=0;i<p.shaping.length;i++){
+      var r = p.shaping[i];
+      if (p.rows > 0 && isShapingRow(r, p.rows)) hits.push(r);
+      var nx = nextShapingRow(r, p.rows);
+      if (nx !== null) nexts.push({ row: nx, rule: r });
+    }
+    if (hits.length){
+      var r0 = hits[0];
+      var done = appliedTimes(r0, p.rows);
+      var total = hits.reduce(function(a,x){ return a + (x.kind === r0.kind ? x.sts : 0); }, 0);
+      var name = r0.label || (kindName(r0.kind) + "단");
+      nowEl.className = "shape-now" + (r0.kind === "dec" ? " dec" : "");
+      nowEl.innerHTML = "";
+      var strong = document.createElement("span");
+      strong.textContent = (hits.length > 1 ? name + " 외 " + (hits.length-1) : name) +
+        " · " + total + "코 " + kindName(r0.kind);
+      var small = document.createElement("small");
+      small.textContent = done + " / " + r0.times + "회";
+      nowEl.appendChild(strong); nowEl.appendChild(small);
+      nowEl.hidden = false;
+      pad.classList.add(r0.kind === "dec" ? "shape-dec" : "shape-inc");
+    } else {
+      nowEl.hidden = true;
+    }
+    nexts = nexts.filter(function(x){ return x.row > p.rows; });
+    if (nexts.length){
+      nexts.sort(function(a,b){ return a.row - b.row; });
+      var n0 = nexts[0];
+      var gap = n0.row - p.rows;
+      var nm = n0.rule.label || (kindName(n0.rule.kind) + "단");
+      nextEl.innerHTML = "다음 " + nm + " · <b>" + gap + "단 뒤</b> (" + n0.row + "단)";
+      nextEl.hidden = false;
+    } else if (p.shaping.length){
+      nextEl.textContent = "예정된 늘림 · 줄임이 모두 끝났어요";
+      nextEl.hidden = false;
+    } else {
+      nextEl.hidden = true;
+    }
+  }
+
+  function renderChart(p){
+    var card = $("chartCard");
+    var app = $("app");
+    if (!p.chart){
+      card.hidden = true;
+      app.classList.remove("has-chart");
+      shownImgFor = null;
+      return;
+    }
+    var src = getImg(p.id);
+    card.hidden = false;
+    app.classList.add("has-chart");
+    var imgEl = $("chartImg");
+    if (src){
+      if (shownImgFor !== p.id){ imgEl.src = src; shownImgFor = p.id; }
+      imgEl.hidden = false;
+    } else {
+      imgEl.removeAttribute("src");
+      imgEl.hidden = true;
+      shownImgFor = null;
+    }
+    var c = p.chart;
+    var r = chartRowOf(p);
+    var pos = $("chartPos");
+    if (r === 0){
+      pos.innerHTML = "시작 전 · 총 " + c.rows + "단";
+    } else if (!c.loop && p.rows >= c.rows){
+      pos.innerHTML = "<b>" + c.rows + "</b> / " + c.rows + "단 · 완료";
+    } else {
+      var cyc = c.loop ? Math.floor((p.rows - 1) / c.rows) : 0;
+      pos.innerHTML = "<b>" + r + "</b> / " + c.rows + "단" + (cyc > 0 ? " · " + cyc + "회 완료" : "");
+    }
+    var band = $("band");
+    var bandRow = (r === 0 && adjusting) ? 1 : r;
+    if (bandRow === 0 || !src){
+      band.hidden = true;
+    } else {
+      band.hidden = false;
+      var rect = bandRect(c, bandRow);
+      band.style.top = (rect.top * 100) + "%";
+      band.style.height = (rect.height * 100) + "%";
+    }
+    $("gA").style.top = (c.top * 100) + "%";
+    $("gB").style.top = (c.bottom * 100) + "%";
+    $("gALabel").textContent = c.dir === "up" ? (c.rows + "단 (맨 위)") : "1단 (맨 위)";
+    $("gBLabel").textContent = c.dir === "up" ? "1단 (맨 아래)" : (c.rows + "단 (맨 아래)");
+    if (document.activeElement !== $("chartRows")) $("chartRows").value = c.rows;
+    $("chartLoop").checked = c.loop;
+    $("dirBtn").textContent = c.dir === "up" ? "아래 → 위" : "위 → 아래";
+    if (!adjusting && !card.classList.contains("collapsed")) scrollBandIntoView();
+  }
+
+  function scrollBandIntoView(){
+    var view = $("chartView"), band = $("band"), wrap = $("chartWrap");
+    if (band.hidden || !wrap.offsetHeight) return;
+    var target = band.offsetTop + band.offsetHeight / 2 - view.clientHeight / 2;
+    target = Math.max(0, Math.min(view.scrollHeight - view.clientHeight, target));
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try { view.scrollTo({ top: target, behavior: reduce ? "auto" : "smooth" }); }
+    catch(e){ view.scrollTop = target; }
+  }
+
+  function render(){
+    var p = active();
+    if (!p){
+      state.projects = [newProject("첫 프로젝트")];
+      state.activeId = state.projects[0].id;
+      p = state.projects[0];
+    }
+    if (state.activeId !== p.id) state.activeId = p.id;
+
+    $("rowCount").textContent = p.rows;
+    renderChips(p);
+
+    if (p.startSts > 0){
+      var n = stitchesAt(p, p.rows);
+      $("stsLine").innerHTML = "현재 <b>" + n + "</b>코";
+      $("stsLine").hidden = false;
+    } else {
+      $("stsLine").hidden = true;
+    }
+
+    var eff = p.chart ? p.chart.rows : p.repeat;
+    var loop = p.chart ? p.chart.loop : true;
+    var box = $("repeatBox");
+    if (!p.chart && eff > 0){
+      box.hidden = false;
+      var posn = p.rows === 0 ? 0 : ((p.rows - 1) % eff) + 1;
+      var cycles = Math.floor(p.rows / eff);
+      var dots = $("dots");
+      dots.textContent = "";
+      if (eff <= 32){
+        for (var i=1;i<=eff;i++){
+          var d = document.createElement("span");
+          d.className = "dot" + (i === posn ? " now" : (i < posn ? " done" : ""));
+          dots.appendChild(d);
+        }
+      }
+      $("repeatText").innerHTML = "패턴 <b>" + (posn || "–") + " / " + eff + "</b>" +
+        (cycles > 0 ? " &nbsp;·&nbsp; " + cycles + "회 완료" : "");
+    } else {
+      box.hidden = true;
+    }
+
+    renderShaping(p);
+    renderChart(p);
+
+    $("undoBtn").disabled = undoStack.length === 0;
+    $("minusBtn").disabled = p.rows === 0;
+  }
+
+  /* ---------- sheets ---------- */
+  var openSheetEl = null;
+  function show(id){
+    if (openSheetEl) hide();
+    openSheetEl = $(id);
+    openSheetEl.classList.add("open");
+    openSheetEl.setAttribute("aria-hidden", "false");
+    $("scrim").classList.add("open");
+  }
+  function hide(){
+    if (!openSheetEl) return;
+    openSheetEl.classList.remove("open");
+    openSheetEl.setAttribute("aria-hidden", "true");
+    openSheetEl = null;
+    $("scrim").classList.remove("open");
+  }
+  function openNote(){ $("noteText").value = active().note; show("noteSheet"); }
+
+  function openEdit(){
+    var p = active();
+    $("nameInput").value = p.name;
+    $("rowsInput").value = p.rows;
+    $("stsInput").value = p.startSts || "";
+    $("repeatInput").value = p.repeat;
+    $("repeatField").hidden = !!p.chart;
+    $("deleteBtn").disabled = state.projects.length <= 1;
+    $("fileLabelText").textContent = p.chart ? "다른 사진으로 바꾸기" : "차트 사진 올리기";
+    renderRules();
+    renderChartMeta();
+    show("editSheet");
+  }
+
+  function ruleSummary(r){
+    var all = shapingRowList(r), txt;
+    if (all.length <= 4) txt = all.join(" · ");
+    else txt = all.slice(0,3).join(" · ") + " … " + all[all.length-1];
+    return txt + "단 · 총 <b>" + (r.sts * r.times) + "코 " + kindName(r.kind) + "</b>";
+  }
+
+  function renderRules(){
+    var p = active();
+    var host = $("ruleList");
+    host.textContent = "";
+    p.shaping.forEach(function(r){
+      var el = document.createElement("div");
+      el.className = "rule";
+      el.innerHTML =
+        '<div class="rule-top">' +
+          '<select><option value="inc">늘림</option><option value="dec">줄임</option></select>' +
+          '<input type="text" maxlength="24" placeholder="예: 소매 양옆">' +
+          '<button class="rule-del" type="button" aria-label="규칙 삭제">&times;</button>' +
+        '</div>' +
+        '<div class="rule-grid">' +
+          '<label>단마다<input type="number" min="1" max="999" inputmode="numeric" data-f="every"></label>' +
+          '<label>코<input type="number" min="1" max="999" inputmode="numeric" data-f="sts"></label>' +
+          '<label>회<input type="number" min="1" max="999" inputmode="numeric" data-f="times"></label>' +
+          '<label>첫 단<input type="number" min="1" max="9999" inputmode="numeric" data-f="start"></label>' +
+        '</div>' +
+        '<div class="rule-sum"></div>';
+      var sel = el.querySelector("select");
+      var lab = el.querySelector('input[type="text"]');
+      var sum = el.querySelector(".rule-sum");
+      sel.value = r.kind;
+      lab.value = r.label;
+      Array.prototype.forEach.call(el.querySelectorAll("[data-f]"), function(inp){
+        inp.value = r[inp.getAttribute("data-f")];
+        inp.addEventListener("change", function(){
+          var f = inp.getAttribute("data-f");
+          var hi = f === "start" ? 9999 : 999;
+          var v = clampNum(inp.value, 1, hi, r[f]);
+          inp.value = v; r[f] = v;
+          sum.innerHTML = ruleSummary(r);
+          commit();
+        });
+      });
+      sel.addEventListener("change", function(){
+        r.kind = sel.value === "dec" ? "dec" : "inc";
+        sum.innerHTML = ruleSummary(r);
+        commit();
+      });
+      lab.addEventListener("input", function(){ r.label = lab.value.slice(0,24); commit(); });
+      el.querySelector(".rule-del").addEventListener("click", function(){
+        pushUndo();
+        p.shaping = p.shaping.filter(function(x){ return x.id !== r.id; });
+        commit(); renderRules();
+      });
+      sum.innerHTML = ruleSummary(r);
+      host.appendChild(el);
+    });
+  }
+
+  function renderChartMeta(){
+    var p = active();
+    var host = $("chartMeta");
+    host.textContent = "";
+    if (!p.chart) return;
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;gap:10px;align-items:center;margin-bottom:11px";
+    var thumb = document.createElement("img");
+    var tsrc = getImg(p.id);
+    if (tsrc) thumb.src = tsrc;
+    thumb.alt = "";
+    thumb.style.cssText = "width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--bg)";
+    var info = document.createElement("div");
+    info.style.cssText = "flex:1;font-size:.8rem;line-height:1.5";
+    info.innerHTML = "총 <b>" + p.chart.rows + "단</b> · " +
+      (p.chart.loop ? "계속 반복" : "한 번만") + "<br><span style='color:var(--muted);font-size:.74rem'>" +
+      (p.chart.dir === "up" ? "아래에서 위로" : "위에서 아래로") + "</span>";
+    var del = document.createElement("button");
+    del.type = "button"; del.className = "rule-del"; del.innerHTML = "&times;";
+    del.setAttribute("aria-label", "차트 삭제");
+    del.addEventListener("click", function(){
+      pushUndo();
+      setImg(p.id, null);
+      p.chart = null;
+      shownImgFor = null;
+      setAdjust(false);
+      commit(); renderChartMeta();
+      $("repeatField").hidden = false;
+      $("fileLabelText").textContent = "차트 사진 올리기";
+    });
+    wrap.appendChild(thumb); wrap.appendChild(info); wrap.appendChild(del);
+    host.appendChild(wrap);
+  }
+
+  /* ---------- image handling ---------- */
+  function loadBitmap(file){
+    if (window.createImageBitmap){
+      return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function(){ return loadViaImg(file); });
+    }
+    return loadViaImg(file);
+  }
+  function loadViaImg(file){
+    return new Promise(function(res, rej){
+      var url = URL.createObjectURL(file);
+      var im = new Image();
+      im.onload = function(){ res(im); };
+      im.onerror = function(){ URL.revokeObjectURL(url); rej(new Error("load")); };
+      im.src = url;
+    });
+  }
+  function compress(bmp){
+    var maxDim = 1200, q = 0.82, out = "";
+    for (var attempt=0; attempt<6; attempt++){
+      var scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+      var w = Math.max(1, Math.round(bmp.width * scale));
+      var h = Math.max(1, Math.round(bmp.height * scale));
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      var ctx = cv.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(bmp, 0, 0, w, h);
+      out = cv.toDataURL("image/jpeg", q);
+      if (out.length <= IMG_MAX_CHARS) return out;
+      if (attempt % 2 === 0) q = Math.max(0.4, q - 0.14);
+      else maxDim = Math.round(maxDim * 0.78);
+    }
+    return out;
+  }
+
+  $("fileInput").addEventListener("change", function(){
+    var file = this.files && this.files[0];
+    this.value = "";
+    if (!file) return;
+    toast("사진 처리 중…");
+    loadBitmap(file).then(function(bmp){
+      var data = compress(bmp);
+      if (bmp.close) bmp.close();
+      if (data.length > 240000){
+        toast("사진이 너무 큽니다. 차트 부분만 잘라서 올려주세요");
+        return;
+      }
+      var p = active();
+      pushUndo();
+      setImg(p.id, data);
+      if (!p.chart) p.chart = normChart({ rows: p.repeat > 0 ? p.repeat : 8, top: .04, bottom: .96, dir: "up", loop: true });
+      shownImgFor = null;
+      commit();
+      renderChartMeta();
+      $("repeatField").hidden = true;
+      $("fileLabelText").textContent = "다른 사진으로 바꾸기";
+      hide();
+      setAdjust(true);
+      toast("선을 격자 위·아래에 맞추고 총 단수를 넣어주세요");
+    }).catch(function(){
+      toast("사진을 읽지 못했어요. 다른 사진으로 시도해 주세요");
+    });
+  });
+
+  /* ---------- adjust mode ---------- */
+  function setAdjust(on){
+    adjusting = !!on;
+    $("chartCard").classList.toggle("adjust", adjusting);
+    $("app").classList.toggle("adjusting", adjusting);
+    $("adjustBtn").classList.toggle("on", adjusting);
+    $("adjustBtn").textContent = adjusting ? "맞추는 중" : "맞추기";
+    if (adjusting){
+      $("chartCard").classList.remove("collapsed");
+      $("foldBtn").textContent = "접기";
+    }
+  }
+  $("adjustBtn").addEventListener("click", function(){ setAdjust(!adjusting); if(!adjusting) scrollBandIntoView(); });
+  $("doneAdjust").addEventListener("click", function(){ setAdjust(false); scrollBandIntoView(); });
+  $("foldBtn").addEventListener("click", function(){
+    var c = $("chartCard");
+    var collapsed = c.classList.toggle("collapsed");
+    $("foldBtn").textContent = collapsed ? "펼치기" : "접기";
+    if (collapsed) setAdjust(false); else scrollBandIntoView();
+  });
+  $("chartRows").addEventListener("change", function(){
+    var p = active();
+    if (!p.chart) return;
+    p.chart.rows = clampNum(this.value, 1, 400, p.chart.rows);
+    this.value = p.chart.rows;
+    commit();
+  });
+  $("chartLoop").addEventListener("change", function(){
+    var p = active();
+    if (!p.chart) return;
+    p.chart.loop = this.checked;
+    commit();
+  });
+  $("dirBtn").addEventListener("click", function(){
+    var p = active();
+    if (!p.chart) return;
+    p.chart.dir = p.chart.dir === "up" ? "down" : "up";
+    commit();
+  });
+
+  function dragGuide(handleId, which){
+    var handle = $(handleId);
+    var dragging = false;
+    function move(e){
+      if (!dragging) return;
+      var rect = $("chartWrap").getBoundingClientRect();
+      if (!rect.height) return;
+      var f = (e.clientY - rect.top) / rect.height;
+      f = Math.max(0, Math.min(1, f));
+      var p = active();
+      if (!p.chart) return;
+      if (which === "top") p.chart.top = Math.min(f, p.chart.bottom - .02);
+      else p.chart.bottom = Math.max(f, p.chart.top + .02);
+      $("gA").style.top = (p.chart.top * 100) + "%";
+      $("gB").style.top = (p.chart.bottom * 100) + "%";
+      var r = chartRowOf(p);
+      if (r > 0){
+        var br = bandRect(p.chart, r);
+        $("band").style.top = (br.top * 100) + "%";
+        $("band").style.height = (br.height * 100) + "%";
+      }
+      e.preventDefault();
+    }
+    handle.addEventListener("pointerdown", function(e){
+      dragging = true;
+      handle.setPointerCapture && handle.setPointerCapture(e.pointerId);
+      e.preventDefault(); e.stopPropagation();
+    });
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", function(e){
+      if (!dragging) return;
+      dragging = false;
+      handle.releasePointerCapture && handle.releasePointerCapture(e.pointerId);
+      commit();
+    });
+    handle.addEventListener("pointercancel", function(){ if(dragging){ dragging=false; commit(); } });
+    handle.addEventListener("keydown", function(e){
+      var step = e.shiftKey ? .01 : .002;
+      var p = active();
+      if (!p.chart) return;
+      if (e.key === "ArrowUp" || e.key === "ArrowDown"){
+        var dir = e.key === "ArrowUp" ? -1 : 1;
+        if (which === "top") p.chart.top = Math.max(0, Math.min(p.chart.bottom - .02, p.chart.top + dir*step));
+        else p.chart.bottom = Math.min(1, Math.max(p.chart.top + .02, p.chart.bottom + dir*step));
+        commit();
+        e.preventDefault();
+      }
+    });
+    handle.tabIndex = 0;
+  }
+  dragGuide("gA", "top");
+  dragGuide("gB", "bottom");
+
+  /* ---------- wiring ---------- */
+  var pad = $("pad"), count = $("rowCount");
+  function tap(){
+    bump(1);
+    pad.classList.remove("bump"); void pad.offsetWidth; pad.classList.add("bump");
+    count.classList.remove("flash"); void count.offsetWidth; count.classList.add("flash");
+  }
+  pad.addEventListener("pointerdown", function(e){ if (e.button && e.button !== 0) return; tap(); });
+  pad.addEventListener("keydown", function(e){ if (e.key === " " || e.key === "Enter"){ e.preventDefault(); tap(); } });
+  pad.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+  $("undoBtn").addEventListener("click", undo);
+  $("minusBtn").addEventListener("click", function(){ bump(-1); });
+  $("noteBtn").addEventListener("click", openNote);
+  $("editBtn").addEventListener("click", openEdit);
+  $("scrim").addEventListener("click", hide);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function(b){
+    b.addEventListener("click", hide);
+  });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && openSheetEl) hide(); });
+
+  $("noteText").addEventListener("input", function(){
+    active().note = this.value.slice(0,4000);
+    clearTimeout(saveTimer);
+    state.updated = Date.now(); lastLocalWrite = state.updated; saveLocal();
+    if (docRef) saveTimer = setTimeout(function(){ docRef.set(clone(state)).catch(function(){}); }, 700);
+  });
+  $("nameInput").addEventListener("input", function(){
+    active().name = this.value.slice(0,24) || "이름 없음";
+    commit();
+  });
+  $("rowsInput").addEventListener("change", function(){
+    var v = clampNum(this.value, 0, 99999, active().rows);
+    this.value = v;
+    if (v === active().rows) return;
+    pushUndo(); active().rows = v; commit();
+  });
+  $("stsInput").addEventListener("change", function(){
+    var v = clampNum(this.value || 0, 0, 9999, 0);
+    this.value = v || "";
+    active().startSts = v; commit();
+  });
+  $("repeatInput").addEventListener("change", function(){
+    var v = clampNum(this.value, 0, 200, active().repeat);
+    this.value = v; active().repeat = v; commit();
+  });
+  $("addRule").addEventListener("click", function(){
+    var p = active();
+    if (p.shaping.length >= 12){ toast("규칙은 12개까지 넣을 수 있어요"); return; }
+    pushUndo();
+    p.shaping.push(newRule());
+    commit(); renderRules();
+  });
+  $("deleteBtn").addEventListener("click", function(){
+    if (state.projects.length <= 1) return;
+    var p = active();
+    if (!window.confirm("'" + p.name + "' 프로젝트를 삭제할까요?")) return;
+    pushUndo();
+    setImg(p.id, null);
+    state.projects = state.projects.filter(function(x){ return x.id !== p.id; });
+    state.activeId = state.projects[0].id;
+    shownImgFor = null;
+    commit(); hide();
+    toast("삭제했어요 — 되돌리기로 복구할 수 있어요");
+  });
+  $("chartImg").addEventListener("load", function(){ if (!adjusting) scrollBandIntoView(); });
+  window.addEventListener("resize", function(){ if (!adjusting) scrollBandIntoView(); });
+
+  /* ---------- boot ---------- */
+  var local = loadLocal();
+  if (local) state = local;
+  else {
+    var first = newProject("첫 프로젝트");
+    state = { projects: [first], activeId: first.id, updated: 0 };
+  }
+  render();
+  initDb();
+})();
+</script>
+</body>
+</html>
